@@ -1,12 +1,11 @@
 import random
-from typing import List, Optional
 
 
 class GameField:
     """represent game field"""
     def __init__(self, dimension):
         self.dimension: int = dimension
-        self.field: List[List[str]] = [['*' for _ in range(self.dimension)] for _ in range(self.dimension)]
+        self.field: list[list[str]] = [['*' for _ in range(self.dimension)] for _ in range(self.dimension)]
 
     def __repr__(self):
         return '\n'.join([' '.join(row) for row in self.field])
@@ -21,7 +20,7 @@ class GameField:
         return empty_sell_exists
 
     @staticmethod
-    def determinate_winner(line: List) -> Optional[str]:
+    def determinate_winner(line: list) -> str | None:
         winner = None
         x_win = ['x', 'x', 'x']
         o_win = ['o', 'o', 'o']
@@ -31,7 +30,7 @@ class GameField:
             winner = 'o'
         return winner
 
-    def check_winner(self) -> Optional[str]:
+    def check_winner(self) -> str | None:
 
         # check row
         for row in self.field:
@@ -72,7 +71,7 @@ class Player:
         return 'human' if self.type else 'computer'
 
     @staticmethod
-    def input(direction):
+    def input(direction) -> int:
         while True:
             try:
                 value = int(input(f'Enter a {direction} number within the range 1 and {game_field.dimension}:'))
@@ -84,7 +83,7 @@ class Player:
                 print('Enter a number!')
         return value
 
-    def make_move(self, game_field: GameField):
+    def make_move(self, game_field: GameField) -> None:
         if self.type:
             row = self.input('row')
             column = self.input('column')
@@ -115,7 +114,7 @@ class Game:
         self.game_field = game_field
         self.winner = None
 
-    def start(self):
+    def start(self) -> None:
         print(game_field)
         while True:
             self.first_player.make_move(self.game_field)
@@ -130,7 +129,7 @@ class Game:
                 break
         self.announce_winner()
 
-    def check_winner(self):
+    def check_winner(self) -> None:
         if not self.game_field.is_empty_sell_exists():
             self.winner = 'TIE'
             return
@@ -138,7 +137,7 @@ class Game:
         if winner_figure:
             self.winner = player_1 if winner_figure == player_1.figure else player_2
 
-    def announce_winner(self):
+    def announce_winner(self) -> None:
         if isinstance(self.winner, Player):
             print(f'{self.winner} WIN!!!')
             return
