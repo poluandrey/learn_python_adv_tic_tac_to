@@ -5,60 +5,56 @@ class GameField:
     """represent game field"""
     def __init__(self, dimension):
         self.dimension: int = dimension
-        self.field: list[list[str]] = [['*' for _ in range(self.dimension)] for _ in range(self.dimension)]
+        self.field: list[list[str]] = self.create_empty_field()
 
-    def __repr__(self):
+    def collect_game_lines(self) -> list[list[str]]:
+        """collect lines from the game field for the winner checking"""
+        lines = []
+        diagonals = []
+        columns = []
+        # collect row
+        lines.extend(self.field)
+        # collect column
+        for row_idx in range(self.dimension):
+            for col_idx in range(self.dimension):
+                columns.append(self.field[col_idx][row_idx])
+            lines.append(columns)
+            columns = []
+        # collect diagonals
+        for i in range(self.dimension):
+            diagonals.append(self.field[i][i])
+        lines.append(diagonals)
+        diagonals = []
+        for i in range(self.dimension):
+            diagonals.append(self.field[i][self.dimension - i - 1])
+        lines.append(diagonals)
+        return lines
+
+    def create_empty_field(self) -> list[list[str]]:
+        return [['*' for _ in range(self.dimension)] for _ in range(self.dimension)]
+
+    def __str__(self):
         return '\n'.join([' '.join(row) for row in self.field])
 
-    def is_empty_sell_exists(self) -> bool:
-        empty_sell_exists = True
+    def is_empty_cell_exists(self) -> bool:
         for row in self.field:
             if '*' in row:
-                empty_sell_exists = True
-                break
-            empty_sell_exists = False
-        return empty_sell_exists
+                return True
+        return False
 
     @staticmethod
     def determinate_winner(line: list) -> str | None:
-        winner = None
         x_win = ['x', 'x', 'x']
         o_win = ['o', 'o', 'o']
         if line == x_win:
-            winner = 'x'
+            return 'x'
         if line == o_win:
-            winner = 'o'
-        return winner
+            return 'o'
 
     def check_winner(self) -> str | None:
-
-        # check row
-        for row in self.field:
-            winner = self.determinate_winner(row)
-            if winner:
+        for line in self.collect_game_lines():
+            if winner := self.determinate_winner(line):
                 return winner
-        # check column
-        line = []
-        for row_idx in range(self.dimension):
-            for col_idx in range(self.dimension):
-                line.append(self.field[col_idx][row_idx])
-            winner = self.determinate_winner(line)
-            if winner:
-                return winner
-            line = []
-        # check first diagonal
-        for i in range(self.dimension):
-            line.append(self.field[i][i])
-        winner = self.determinate_winner(line)
-        if winner:
-            return winner
-        line = []
-        # check second diagonal
-        for i in range(self.dimension):
-            line.append(self.field[i][self.dimension - 1 - i])
-        winner = self.determinate_winner(line)
-        if winner:
-            return winner
 
 
 class Player:
@@ -130,7 +126,7 @@ class Game:
         self.announce_winner()
 
     def check_winner(self) -> None:
-        if not self.game_field.is_empty_sell_exists():
+        if not self.game_field.is_empty_cell_exists():
             self.winner = 'TIE'
             return
         winner_figure = game_field.check_winner()
