@@ -1,14 +1,41 @@
 import random
+from enum import Enum
+
+
+def handle_dimension_input() -> int:
+    while True:
+        try:
+            return int(input('Please input game field dimension'))
+        except ValueError:
+            print('Please use only number')
+
+
+def handle_human_input(direction, dimension) -> int:
+    while True:
+        try:
+            human_input = int(input(f'Enter a {direction} number within the range 1 and {dimension}:'))
+            if validate_input(human_input, dimension):
+                return human_input
+            print("Input is outside the specified range. Try again.")
+        except ValueError:
+            print('Enter a number!')
+
+
+def validate_input(human_input: int, dimension) -> bool:
+    if not 1 <= human_input <= dimension:
+        return False
+    return True
 
 
 class GameField:
     """represent game field"""
+
     def __init__(self, dimension):
         self.dimension: int = dimension
         self.field: list[list[str]] = self.create_empty_field()
 
     def collect_game_lines(self) -> list[list[str]]:
-        """collect lines from the game field for the winner checking"""
+        """collect lines from the game field for the game_result checking"""
         lines = []
         diagonals = []
         columns = []
@@ -57,96 +84,122 @@ class GameField:
                 return winner
 
 
+class PlayerType(Enum):
+    HUMAN = 1
+    COMPUTER = 0
+
+
 class Player:
     """represent player"""
-    def __init__(self, player_type, player_figure):
+
+    def __init__(self, player_type: PlayerType, player_figure: str):
         self.type = player_type
-        self.figure = 'x' if player_figure else 'o'
+        self.figure = player_figure
 
-    def __repr__(self):
-        return 'human' if self.type else 'computer'
+    def __str__(self):
+        return 'first_player' if self.type else 'second_player'
 
-    @staticmethod
-    def input(direction) -> int:
-        while True:
-            try:
-                value = int(input(f'Enter a {direction} number within the range 1 and {game_field.dimension}:'))
-                if 1 <= value <= game_field.dimension:
-                    break
-                else:
-                    print("Input is outside the specified range. Try again.")
-            except ValueError:
-                print('Enter a number!')
-        return value
+
+class HumanPlayer(Player):
+
+    def __init__(self, player_type: PlayerType, player_figure: str):
+        super().__init__(player_type, player_figure)
 
     def make_move(self, game_field: GameField) -> None:
-        if self.type:
-            row = self.input('row')
-            column = self.input('column')
-            while game_field.field[row - 1][column - 1] != '*':
-                print('choose another cell!')
-                print(game_field)
-                row = self.input('row')
-                column = self.input('column')
-            game_field.field[row - 1][column - 1] = self.figure
-        else:
-            empty_cell = [
-                (row_idx, col_idx) for col_idx in range(game_field.dimension)
-                for row_idx in range(game_field.dimension) if game_field.field[row_idx][col_idx] == '*']
-            computer_choose = random.choice(empty_cell)
-            row_idx, column_idx = computer_choose
-            game_field.field[row_idx][column_idx] = self.figure
+        row = handle_human_input('row', game_field.dimension)
+        column = handle_human_input('column', game_field.dimension)
+        while game_field.field[row - 1][column - 1] != '*':
+            print('choose another cell!')
+            print(game_field)
+            row = handle_human_input('row', game_field.dimension)
+            column = handle_human_input('column', game_field.dimension)
+        game_field.field[row - 1][column - 1] = self.figure
+
+
+class ComputerPlayer(Player):
+    def _init(self, player_type: PlayerType, player_figure: str):
+        super().__init__(player_type, player_figure)
+
+    def make_move(self, game_field: GameField):
+        empty_cells = [
+            (row_idx, col_idx) for col_idx in range(game_field.dimension)
+            for row_idx in range(game_field.dimension) if game_field.field[row_idx][col_idx] == '*'
+        ]
+        row_idx, column_idx = random.choice(empty_cells)
+        game_field.field[row_idx][column_idx] = self.figure
+
+
+class GameResult(Enum):
+    HUMAN = 1
+    COMPUTER = 0
+    TIE = 2
 
 
 class Game:
     """represent game"""
-    def __init__(self, player_1: Player, player_2: Player, game_field: GameField):
-        if player_1.figure == 'x':
-            self.first_player = player_1
-            self.second_player = player_2
+
+    def __init__(
+            self,
+            first_player: HumanPlayer | ComputerPlayer,
+            second_player: HumanPlayer | ComputerPlayer,
+            game_field: GameField
+    ):
+        if first_player.figure == 'x':
+            self.first_player = first_player
+            self.second_player = second_player
         else:
-            self.first_player = player_2
-            self.second_player = player_1
+            self.first_player = second_player
+            self.second_player = first_player
         self.game_field = game_field
-        self.winner = None
+        self.game_result = None
+
+    def player_move(self, player: ComputerPlayer | HumanPlayer) -> None:
+        player.make_move(self.game_field)
+        print(self.game_field)
 
     def start(self) -> None:
-        print(game_field)
+        print(self.game_field)
         while True:
             self.first_player.make_move(self.game_field)
-            print(game_field)
-            self.check_winner()
-            if self.winner:
+            print(self.game_field)
+            self.game_result = self.check_game_result()
+            if self.game_result:
                 break
             self.second_player.make_move(self.game_field)
-            print(game_field)
-            self.check_winner()
-            if self.winner:
+            print(self.game_field)
+            self.game_result = self.check_game_result()
+            if self.game_result:
                 break
         self.announce_winner()
 
-    def check_winner(self) -> None:
+    def check_game_result(self) -> GameResult | None:
+        if winner_figure := self.game_field.check_winner():
+            winner_type = self.first_player.type if winner_figure == self.first_player.figure else self.second_player.type
+            return GameResult.HUMAN if winner_type == PlayerType.HUMAN else GameResult.COMPUTER
         if not self.game_field.is_empty_cell_exists():
-            self.winner = 'TIE'
-            return
-        winner_figure = game_field.check_winner()
-        if winner_figure:
-            self.winner = player_1 if winner_figure == player_1.figure else player_2
+            return GameResult.TIE
+        # winner_figure = self.game_field.check_winner()
 
     def announce_winner(self) -> None:
-        if isinstance(self.winner, Player):
-            print(f'{self.winner} WIN!!!')
+        if self.game_result in [GameResult.HUMAN, GameResult.COMPUTER]:
+            print(f'{self.game_result.name} WIN!!!')
             return
-        print(self.winner)
+        print(self.game_result.name)
+
+
+def main():
+    dimension = handle_dimension_input()
+    first_player_figure = 'x' if random.randint(0, 1) else 'o'
+    second_player_figure = 'o' if first_player_figure == 'x' else 'x'
+    print(first_player_figure, second_player_figure)
+    human = HumanPlayer(player_type=PlayerType.HUMAN, player_figure=first_player_figure)
+    computer = ComputerPlayer(player_type=PlayerType.COMPUTER, player_figure=second_player_figure)
+    print(f'You will play {human.figure}')
+    game_field = GameField(dimension=dimension)
+
+    game = Game(human, computer, game_field=game_field)
+    game.start()
 
 
 if __name__ == '__main__':
-    first_player_figure = random.randint(0, 1)
-    second_player_figure = 0 if first_player_figure else 1
-    player_1 = Player(player_type=1, player_figure=first_player_figure)
-    player_2 = Player(player_type=0, player_figure=second_player_figure)
-    print(player_1.figure, player_2.figure)
-    game_field = GameField(dimension=3)
-
-    game = Game(player_1=player_1, player_2=player_2, game_field=game_field)
-    game.start()
+    main()
