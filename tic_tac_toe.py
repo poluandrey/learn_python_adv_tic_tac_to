@@ -58,7 +58,9 @@ class GameField:
         return lines
 
     def create_empty_field(self) -> list[list[str]]:
-        return [['*' for _ in range(self.dimension)] for _ in range(self.dimension)]
+        return [
+            ['*' for _ in range(self.dimension)]
+            for _ in range(self.dimension)]
 
     def __str__(self):
         return '\n'.join([' '.join(row) for row in self.field])
@@ -77,11 +79,13 @@ class GameField:
             return 'x'
         if line == o_win:
             return 'o'
+        return None
 
     def check_winner(self) -> str | None:
         for line in self.collect_game_lines():
             if winner := self.determinate_winner(line):
                 return winner
+        return None
 
 
 class PlayerType(Enum):
@@ -123,7 +127,8 @@ class ComputerPlayer(Player):
     def make_move(self, game_field: GameField):
         empty_cells = [
             (row_idx, col_idx) for col_idx in range(game_field.dimension)
-            for row_idx in range(game_field.dimension) if game_field.field[row_idx][col_idx] == '*'
+            for row_idx in range(game_field.dimension)
+            if game_field.field[row_idx][col_idx] == '*'
         ]
         row_idx, column_idx = random.choice(empty_cells)
         game_field.field[row_idx][column_idx] = self.figure
@@ -160,7 +165,9 @@ class Game:
         if not winner_figure and empty_cell_exists:
             return None
         if winner_figure:
-            winner = [player for player in self.players if player.figure == winner_figure][0]
+            winner = [
+                player for player in self.players if player.figure == winner_figure
+            ][0]
             return GameResult.HUMAN if winner.player_type == PlayerType.HUMAN else GameResult.COMPUTER
         return GameResult.TIE
 
