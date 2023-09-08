@@ -138,18 +138,8 @@ class GameResult(Enum):
 class Game:
     """represent game"""
 
-    def __init__(
-            self,
-            first_player: HumanPlayer | ComputerPlayer,
-            second_player: HumanPlayer | ComputerPlayer,
-            game_field: GameField
-    ):
-        if first_player.figure == 'x':
-            self.first_player = first_player
-            self.second_player = second_player
-        else:
-            self.first_player = second_player
-            self.second_player = first_player
+    def __init__(self, players: list[HumanPlayer | ComputerPlayer], game_field: GameField):
+        self.players = players
         self.game_field = game_field
         self.game_result = None
 
@@ -159,26 +149,24 @@ class Game:
 
     def start(self) -> None:
         print(self.game_field)
-        while True:
-            self.first_player.make_move(self.game_field)
-            print(self.game_field)
-            self.game_result = self.check_game_result()
-            if self.game_result:
-                break
-            self.second_player.make_move(self.game_field)
-            print(self.game_field)
-            self.game_result = self.check_game_result()
-            if self.game_result:
-                break
+        while not self.game_result:
+            for player in self.players:
+                player.make_move(self.game_field)
+                print(self.game_field)
+                self.game_result = self.check_game_result()
+                if self.game_result:
+                    break
         self.announce_winner()
 
     def check_game_result(self) -> GameResult | None:
-        if winner_figure := self.game_field.check_winner():
-            winner_type = self.first_player.type if winner_figure == self.first_player.figure else self.second_player.type
-            return GameResult.HUMAN if winner_type == PlayerType.HUMAN else GameResult.COMPUTER
-        if not self.game_field.is_empty_cell_exists():
-            return GameResult.TIE
-        # winner_figure = self.game_field.check_winner()
+        winner_figure = self.game_field.check_winner()
+        empty_cell_exists = self.game_field.is_empty_cell_exists()
+        if not winner_figure and empty_cell_exists:
+            return None
+        if winner_figure:
+            winner = [player for player in self.players if player.figure == winner_figure][0]
+            return GameResult.HUMAN if winner.type == PlayerType.HUMAN else GameResult.COMPUTER
+        return GameResult.TIE
 
     def announce_winner(self) -> None:
         if self.game_result in [GameResult.HUMAN, GameResult.COMPUTER]:
@@ -191,13 +179,19 @@ def main():
     dimension = handle_dimension_input()
     first_player_figure = 'x' if random.randint(0, 1) else 'o'
     second_player_figure = 'o' if first_player_figure == 'x' else 'x'
-    print(first_player_figure, second_player_figure)
+
     human = HumanPlayer(player_type=PlayerType.HUMAN, player_figure=first_player_figure)
     computer = ComputerPlayer(player_type=PlayerType.COMPUTER, player_figure=second_player_figure)
+
+    if first_player_figure == 'x':
+        players = [human, computer]
+    else:
+        players = [computer, human]
+
     print(f'You will play {human.figure}')
     game_field = GameField(dimension=dimension)
 
-    game = Game(human, computer, game_field=game_field)
+    game = Game(players=players, game_field=game_field)
     game.start()
 
 
